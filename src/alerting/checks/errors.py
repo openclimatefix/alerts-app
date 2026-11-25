@@ -1,6 +1,3 @@
-# 1. mae
-# 2. mean_error
-# 3. rmse
 """Error maths on forecast and observed values, given in the same order."""
 
 from collections.abc import Sequence
