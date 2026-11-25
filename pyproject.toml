@@ -1,17 +1,19 @@
 [project]
 name = "alerting"
 version = "0.1.0"
-description = "Add your description here"
+description = "Checks solar forecasts against observations and fails when they are far apart"
 readme = "README.md"
 authors = [
-    { name = "Mohit Katyal", email = "128162892+katyalmohit@users.noreply.github.com" }
+    { name = "Mohit Katyal", email = "mohit@openclimatefix.org" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "dp-sdk",
+]
 
 [project.scripts]
-alerting = "alerting:main"
 check-alerts = "alerting.main:main"
+calc-limits = "alerting.limits:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
@@ -23,3 +25,43 @@ dev = [
     "ruff>=0.17.4",
     "ty>=0.0.100",
 ]
+
+[tool.uv.sources]
+dp-sdk = { url = "https://github.com/openclimatefix/data-platform/releases/download/v0.40.5/dp_sdk-0.40.5-py3-none-any.whl" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle
+    "W",   # whitespace and newlines
+    "I",   # isort
+    "UP",  # modernize
+    "ANN", # flake8 type annotations
+    "S",   # flake8 bandit
+    "B",   # flake8 bugbear
+    "C4",  # flake8 comprehensions
+    "COM", # flake8 commas
+    "T20", # flake8 print
+    "SIM", # flake8 simplify
+    "ARG", # flake8 unused arguments
+    "DTZ", # flake8 datetimes
+    "Q",   # flake8 quotes
+    "D",   # pydocstyle
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "D104",   # empty __init__.py files need no docstring
+    "COM812", # handled by the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "ANN", "S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
