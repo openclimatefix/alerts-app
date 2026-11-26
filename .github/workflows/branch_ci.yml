@@ -27,4 +27,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv run ty check
+      - run: uv run --locked ty check

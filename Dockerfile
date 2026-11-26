@@ -26,4 +26,4 @@ FROM python:3.14-slim
 COPY --from=build /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-ENTRYPOINT ["check-alerts"]
+CMD ["check-alerts"]
