@@ -9,7 +9,7 @@ from datetime import UTC, date, datetime, timedelta
 from alerting.adapters.data_platform import open_data_platform
 from alerting.checks.big_errors import Pair, biggest_error, error_pct, pair
 from alerting.checks.errors import percentile
-from alerting.config import load_settings
+from alerting.config import load_data_platform_settings, load_limits_settings
 from alerting.models import Forecast, Observation
 
 log = logging.getLogger(__name__)
@@ -63,20 +63,23 @@ def report(horizon: int, worst: Sequence[Pair]) -> None:
 
 async def run() -> None:
     """Pull the history and report on each horizon."""
-    settings = load_settings()
+    data_platform_settings = load_data_platform_settings()
+    limits_settings = load_limits_settings()
     # Whole UTC days only, so today's part day is left out
     end = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-    start = end - timedelta(days=settings.history_days)
-    async with open_data_platform(settings) as source:
+    start = end - timedelta(days=limits_settings.history_days)
+    async with open_data_platform(data_platform_settings) as source:
         observed = await source.get_observations(start, end)
-        forecasts = {h: await source.get_forecast(h, start, end) for h in settings.horizons_mins}
+        forecasts = {
+            h: await source.get_forecast(h, start, end) for h in limits_settings.horizons_mins
+        }
 
     log.info(
         "%s %s against %s, last %d days",
-        settings.country_code,
-        settings.forecaster_name,
-        settings.observer_name,
-        settings.history_days,
+        data_platform_settings.country_code,
+        data_platform_settings.forecaster_name,
+        data_platform_settings.observer_name,
+        limits_settings.history_days,
     )
     for horizon, forecast in forecasts.items():
         report(horizon, daily_biggest_errors(forecast, observed))

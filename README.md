@@ -41,6 +41,7 @@ All settings are environment variables.
 | --- | --- | --- |
 | `DATA_PLATFORM_HOST` | required | Data platform host |
 | `DATA_PLATFORM_PORT` | `50051` | Data platform port |
+| `DATA_PLATFORM_TIMEOUT_SECS` | `60` | A data platform request fails after this many seconds |
 | `COUNTRY_CODE` | `GB` | Country whose national solar forecast is checked |
 | `FORECASTER_NAME` | `blend` | Forecaster to check |
 | `FORECASTER_VERSION` | empty | Forecaster version. Empty means the latest |
@@ -84,10 +85,13 @@ src/alerting/
   limits.py      calc-limits entrypoint
   config.py      settings from environment variables
   models.py      plain data types
-  ports.py       interface for reading data
-  checks/        the checks, as pure functions
-  adapters/      data platform client
+  ports.py       interfaces for reading data and sending results
+  checks/        the checks
+  adapters/      data platform client, log notifier
 ```
 
-To add a check, write a function that takes the data and the settings and returns a list of
-results. Then add it to `CHECKS` in `src/alerting/checks/__init__.py`.
+`main.py` wires the real data platform and the log notifier into `run`. Tests pass in fakes.
+
+To add a check, write an async function that takes the data source, the settings and the
+current time, pulls the data it needs, and returns a list of results. Then add it to `CHECKS` in
+`src/alerting/checks/__init__.py`.

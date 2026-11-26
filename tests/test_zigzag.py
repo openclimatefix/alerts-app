@@ -1,15 +1,16 @@
+import asyncio
 from datetime import timedelta
 
 from alerting.checks.zigzag import check_zigzag, count_turns, newest_run
-from alerting.models import Data
-from tests.helpers import START, forecasts, settings
+from alerting.models import CheckResult
+from tests.helpers import START, FakeSource, forecasts, settings
 
 SMOOTH = [0.0, 100.0, 300.0, 500.0, 520.0, 400.0, 200.0, 0.0]
 ZIGZAG = [0.0, 300.0, 100.0, 400.0, 150.0, 500.0, 200.0, 0.0]
 
 
-def data(values: list[float]) -> Data:
-    return Data(observed=[], forecasts={}, latest_forecast=forecasts(values))
+def check(values: list[float]) -> list[CheckResult]:
+    return asyncio.run(check_zigzag(FakeSource({0: forecasts(values)}), settings(), START))
 
 
 def test_smooth_day_turns_once() -> None:
@@ -41,16 +42,22 @@ def test_newest_run_drops_older_forecasts() -> None:
 
 
 def test_smooth_forecast_passes() -> None:
-    [result] = check_zigzag(data(SMOOTH), settings())
+    [result] = check(SMOOTH)
     assert result.passed
 
 
 def test_zigzag_forecast_fails() -> None:
-    [result] = check_zigzag(data(ZIGZAG), settings())
+    [result] = check(ZIGZAG)
     assert not result.passed
     assert "changes of direction: 5 (limit 1)" in result.message
 
 
 def test_no_forecast_fails() -> None:
-    [result] = check_zigzag(data([]), settings())
+    [result] = check([])
     assert not result.passed
+
+
+def test_asks_for_the_next_hours_of_the_newest_forecast() -> None:
+    source = FakeSource()
+    asyncio.run(check_zigzag(source, settings(zigzag_hours=8), START))
+    assert source.requests == [(0, START, START + timedelta(hours=8))]

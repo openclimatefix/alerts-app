@@ -1,10 +1,12 @@
 """Check for big forecast errors."""
 
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 
 from alerting.checks.errors import mae, mean_error, rmse
-from alerting.config import Settings
-from alerting.models import CheckResult, Data, Forecast, Observation
+from alerting.config import CheckSettings
+from alerting.models import CheckResult, Forecast, Observation
+from alerting.ports import DataSource
 
 type Pair = tuple[Forecast, Observation]
 
@@ -25,11 +27,19 @@ def biggest_error(pairs: Sequence[Pair]) -> Pair:
     return max(pairs, key=lambda p: error_pct(*p))
 
 
-def check_big_errors(data: Data, settings: Settings) -> list[CheckResult]:
-    """Fail when the biggest error at a horizon is above the limit."""
+async def check_big_errors(
+    source: DataSource, settings: CheckSettings, now: datetime
+) -> list[CheckResult]:
+    """Fail when the biggest error at a horizon in the last few hours is above the limit."""
+    start = now - timedelta(hours=settings.window_hours)
+    observed = await source.get_observations(start, now)
     return [
-        _check_horizon(horizon, pair(forecast, data.observed), settings.error_limit_pct)
-        for horizon, forecast in data.forecasts.items()
+        _check_horizon(
+            horizon,
+            pair(await source.get_forecast(horizon, start, now), observed),
+            settings.error_limit_pct,
+        )
+        for horizon in settings.horizons_mins
     ]
 
 

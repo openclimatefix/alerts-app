@@ -1,9 +1,11 @@
 """Check that the newest forecast does not zigzag."""
 
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 
-from alerting.config import Settings
-from alerting.models import CheckResult, Data, Forecast
+from alerting.config import CheckSettings
+from alerting.models import CheckResult, Forecast
+from alerting.ports import DataSource
 
 
 def count_turns(values: Sequence[float], min_step: float) -> int:
@@ -29,12 +31,15 @@ def newest_run(forecast: Sequence[Forecast]) -> list[Forecast]:
     return sorted((f for f in forecast if f.made_at == newest), key=lambda f: f.time)
 
 
-def check_zigzag(data: Data, settings: Settings) -> list[CheckResult]:
+async def check_zigzag(
+    source: DataSource, settings: CheckSettings, now: datetime
+) -> list[CheckResult]:
     """Fail when the newest forecast changes direction too many times."""
-    if not data.latest_forecast:
+    forecast = await source.get_forecast(0, now, now + timedelta(hours=settings.zigzag_hours))
+    if not forecast:
         return [CheckResult("zigzag", False, "no forecast found for the next hours")]
 
-    run = newest_run(data.latest_forecast)
+    run = newest_run(forecast)
     min_step_mw = settings.zigzag_min_step_pct / 100 * run[0].capacity_mw
     turns = count_turns([f.mw for f in run], min_step_mw)
     message = (

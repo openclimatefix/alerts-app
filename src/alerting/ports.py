@@ -1,9 +1,10 @@
 """Interfaces the app uses to reach the outside world."""
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 
-from alerting.models import Forecast, Observation
+from alerting.models import CheckResult, Forecast, Observation
 
 
 class DataSource(Protocol):
@@ -17,4 +18,12 @@ class DataSource(Protocol):
 
     async def get_observations(self, start: datetime, end: datetime) -> list[Observation]:
         """Observed value for each time in the window."""
+        ...
+
+
+class Notifier(Protocol):
+    """Where check results are sent."""
+
+    async def notify(self, results: Sequence[CheckResult]) -> None:
+        """Deliver the results of a run."""
         ...

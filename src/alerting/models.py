@@ -24,15 +24,6 @@ class Observation:
 
 
 @dataclass(frozen=True)
-class Data:
-    """Everything the checks need, pulled once at the start of a run."""
-
-    observed: list[Observation]
-    forecasts: dict[int, list[Forecast]]  # horizon in minutes -> forecast for the time window
-    latest_forecast: list[Forecast]  # forecast for the next few hours
-
-
-@dataclass(frozen=True)
 class CheckResult:
     """The outcome of one check."""
 

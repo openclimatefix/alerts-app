@@ -1,7 +1,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
-from alerting.config import Settings, load_settings
+from alerting.config import CheckSettings, load_check_settings
 from alerting.models import Forecast, Observation
 
 START = datetime(2026, 6, 1, tzinfo=UTC)
@@ -26,6 +26,28 @@ def observations(values: list[float], start: datetime = START) -> list[Observati
     ]
 
 
-def settings(**changes: object) -> Settings:
-    """The default settings, with some values changed."""
-    return replace(load_settings({"DATA_PLATFORM_HOST": "localhost"}), **changes)
+def settings(**changes: object) -> CheckSettings:
+    """The default check settings, with some values changed."""
+    return replace(load_check_settings({}), **changes)
+
+
+class FakeSource:
+    """A data source that serves values from memory and keeps each request."""
+
+    def __init__(
+        self,
+        forecast: dict[int, list[Forecast]] | None = None,
+        observed: list[Observation] | None = None,
+    ) -> None:
+        self.forecast = forecast or {}
+        self.observed = observed or []
+        self.requests: list[tuple[int, datetime, datetime]] = []
+
+    async def get_forecast(
+        self, horizon_mins: int, start: datetime, end: datetime
+    ) -> list[Forecast]:
+        self.requests.append((horizon_mins, start, end))
+        return [f for f in self.forecast.get(horizon_mins, []) if start <= f.time <= end]
+
+    async def get_observations(self, start: datetime, end: datetime) -> list[Observation]:
+        return [o for o in self.observed if start <= o.time <= end]

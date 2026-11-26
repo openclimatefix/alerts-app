@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from grpclib.client import Channel
 from ocf import dp
 
-from alerting.config import Settings
+from alerting.config import DataPlatformSettings
 from alerting.models import Forecast, Observation
 
 # The data platform allows 31 days per request
@@ -102,12 +102,11 @@ class DataPlatform:
 
 
 @asynccontextmanager
-async def open_data_platform(settings: Settings) -> AsyncGenerator[DataPlatform]:
+async def open_data_platform(settings: DataPlatformSettings) -> AsyncGenerator[DataPlatform]:
     """Connect to the data platform and find the country's national location."""
-    async with Channel(
-        host=settings.data_platform_host, port=settings.data_platform_port
-    ) as channel:
-        client = dp.DataPlatformDataServiceStub(channel)
+    async with Channel(host=settings.host, port=settings.port) as channel:
+        # Every request fails after the timeout, so a stalled data platform cannot block the run
+        client = dp.DataPlatformDataServiceStub(channel, timeout=settings.timeout_secs)
         yield DataPlatform(
             client=client,
             location_uuid=await get_national_location_uuid(client, settings.country_code),
