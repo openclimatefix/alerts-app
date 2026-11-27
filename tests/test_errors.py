@@ -3,7 +3,6 @@ import pytest
 from alerting.checks.errors import (
     absolute_errors,
     mae,
-    max_absolute_error,
     mean_error,
     percentile,
     rmse,
@@ -17,15 +16,6 @@ def test_absolute_errors() -> None:
 def test_absolute_errors_length_mismatch() -> None:
     with pytest.raises(ValueError):
         absolute_errors([1.0], [1.0, 2.0])
-
-
-def test_max_absolute_error() -> None:
-    assert max_absolute_error([1.0, 2.0, 3.0], [2.0, 2.0, 1.0]) == 2.0
-
-
-def test_max_absolute_error_empty() -> None:
-    with pytest.raises(ValueError):
-        max_absolute_error([], [])
 
 
 def test_mae() -> None:

@@ -15,11 +15,6 @@ def absolute_errors(forecast: Sequence[float], observed: Sequence[float]) -> lis
     return [abs(e) for e in errors(forecast, observed)]
 
 
-def max_absolute_error(forecast: Sequence[float], observed: Sequence[float]) -> float:
-    """Largest absolute error across all times."""
-    return max(absolute_errors(forecast, observed))
-
-
 def mae(forecast: Sequence[float], observed: Sequence[float]) -> float:
     """Mean Absolute Error between forecast and observed values."""
     return fmean(absolute_errors(forecast, observed))
