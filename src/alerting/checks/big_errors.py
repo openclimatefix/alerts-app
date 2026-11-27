@@ -1,5 +1,6 @@
 """Check for big forecast errors."""
 
+import asyncio
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 
@@ -32,14 +33,13 @@ async def check_big_errors(
 ) -> list[CheckResult]:
     """Fail when the biggest error at a horizon in the last few hours is above the limit."""
     start = now - timedelta(hours=settings.window_hours)
-    observed = await source.get_observations(start, now)
+    observed, forecasts = await asyncio.gather(
+        source.get_observations(start, now),
+        asyncio.gather(*(source.get_forecast(h, start, now) for h in settings.horizons_mins)),
+    )
     return [
-        _check_horizon(
-            horizon,
-            pair(await source.get_forecast(horizon, start, now), observed),
-            settings.error_limit_pct,
-        )
-        for horizon in settings.horizons_mins
+        _check_horizon(horizon, pair(forecast, observed), settings.error_limit_pct)
+        for horizon, forecast in zip(settings.horizons_mins, forecasts, strict=True)
     ]
 
 

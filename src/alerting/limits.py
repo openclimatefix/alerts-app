@@ -69,10 +69,13 @@ async def run() -> None:
     end = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     start = end - timedelta(days=limits_settings.history_days)
     async with open_data_platform(data_platform_settings) as source:
-        observed = await source.get_observations(start, end)
-        forecasts = {
-            h: await source.get_forecast(h, start, end) for h in limits_settings.horizons_mins
-        }
+        observed, forecast_list = await asyncio.gather(
+            source.get_observations(start, end),
+            asyncio.gather(
+                *(source.get_forecast(h, start, end) for h in limits_settings.horizons_mins)
+            ),
+        )
+    forecasts = dict(zip(limits_settings.horizons_mins, forecast_list, strict=True))
 
     log.info(
         "%s %s against %s, last %d days",
